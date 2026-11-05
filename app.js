@@ -31,27 +31,16 @@ window.onload = function() {
 
     setInterval(() => {
         loadDataFromCloud();
-    }, 1000);
+    }, 5000);
 };
 
-function toggleReqType() {
-    const type = document.getElementById('req-type').value;
-    const pwdWrapper = document.getElementById('wrapper-new-pwd');
-    const nipWrapper = document.getElementById('wrapper-new-nip');
-    const pwdInput = document.getElementById('reset-pwd-new');
-    const nipInput = document.getElementById('req-new-nip');
+// MODAL PERMINTAAN AKUN (GANTI USERNAME & PASSWORD)
+function openResetPasswordModal() {
+    document.getElementById('modal-reset-pwd').classList.remove('hidden');
+}
 
-    if (type === 'password') {
-        pwdWrapper.classList.remove('hidden');
-        nipWrapper.classList.add('hidden');
-        pwdInput.setAttribute('required', 'true');
-        nipInput.removeAttribute('required');
-    } else {
-        pwdWrapper.classList.add('hidden');
-        nipWrapper.classList.remove('hidden');
-        pwdInput.removeAttribute('required');
-        nipInput.setAttribute('required', 'true');
-    }
+function closeResetPasswordModal() {
+    document.getElementById('modal-reset-pwd').classList.add('hidden');
 }
 
 function submitAccountChangeRequest(e) {
@@ -77,46 +66,55 @@ function submitAccountChangeRequest(e) {
     pwdRequests.push(req);
     saveData();
     closeResetPasswordModal();
-    alert('Permintaan perubahan berhasil dikirim ke Master Admin.');
+    alert('Permintaan perubahan akun berhasil dikirim ke Master Admin.');
 }
 
+// RENDER TABEL PERMINTAAN PADA PANEL MASTER ADMIN
 function renderPwdRequestsTable() {
     const tbody = document.getElementById('pwd-requests-table-body');
     if (!tbody) return;
     tbody.innerHTML = '';
 
     const pendingReqs = pwdRequests.filter(r => r.status === 'pending');
-    document.getElementById('pwd-req-badge').innerText = pendingReqs.length;
-    if(pendingReqs.length > 0) {
-        document.getElementById('pwd-req-badge').classList.remove('hidden');
-    } else {
-        document.getElementById('pwd-req-badge').classList.add('hidden');
+    const badgeEl = document.getElementById('pwd-req-badge');
+    if (badgeEl) {
+        badgeEl.innerText = pendingReqs.length;
+        if (pendingReqs.length > 0) {
+            badgeEl.classList.remove('hidden');
+        } else {
+            badgeEl.classList.add('hidden');
+        }
+    }
+
+    if (pwdRequests.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400 italic">Belum ada permintaan perubahan akun.</td></tr>`;
+        return;
     }
 
     pwdRequests.forEach(req => {
-        // Menangani data lama yang mungkin menggunakan properti 'value' atau format lain
+        // Fallback kompatibilitas data lama agar tidak muncul 'undefined'
         const displayUsername = req.newUsername || req.value || '-';
-        const displayPassword = req.newPassword || '-';
+        const displayPassword = req.newPassword || req.newPwd || '-';
 
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
         tr.innerHTML = `
-            <td class="p-3 font-mono text-xs">${formatDateWithTime(req.time)}</td>
+            <td class="p-3 font-mono text-xs text-slate-600">${formatDateWithTime(req.time)}</td>
             <td class="p-3 font-semibold text-slate-800">${req.username}</td>
             <td class="p-3 font-mono text-indigo-600 font-bold">${displayUsername}</td>
             <td class="p-3 font-mono text-emerald-600 font-bold">${displayPassword}</td>
             <td class="p-3">
-                <span class="px-2 py-1 rounded-md text-xs font-medium ${req.status === 'pending' ? 'bg-amber-100 text-amber-700' : (req.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700')}">
+                <span class="px-2 py-1 rounded-md text-xs font-semibold ${req.status === 'pending' ? 'bg-amber-100 text-amber-700' : (req.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700')}">
                     ${req.status.toUpperCase()}
                 </span>
             </td>
             <td class="p-3 text-center">
                 ${req.status === 'pending' ? `
                     <div class="flex items-center justify-center space-x-2">
-                        <button onclick="approveAccountRequest('${req.id}')" class="px-3 py-1 bg-emerald-600 text-white text-xs rounded hover:bg-emerald-700"><i class="fa-solid fa-check mr-1"></i> Setujui</button>
-                        <button onclick="rejectAccountRequest('${req.id}')" class="px-3 py-1 bg-rose-600 text-white text-xs rounded hover:bg-rose-700"><i class="fa-solid fa-xmark mr-1"></i> Tolak</button>
+                        <button onclick="approveAccountRequest('${req.id}')" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded shadow transition"><i class="fa-solid fa-check mr-1"></i> Setujui</button>
+                        <button onclick="rejectAccountRequest('${req.id}')" class="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white text-xs font-medium rounded shadow transition"><i class="fa-solid fa-xmark mr-1"></i> Tolak</button>
                     </div>
-                ` : '-'}
+                ` : '<span class="text-xs text-slate-400 font-medium">-</span>'}
             </td>
         `;
         tbody.appendChild(tr);
@@ -128,23 +126,26 @@ function approveAccountRequest(reqId) {
     if (req) {
         req.status = 'approved';
         const oldUser = req.username;
-        const newUsername = req.newUsername;
-        const newPassword = req.newPassword;
+        const newUsername = (req.newUsername && req.newUsername !== '-') ? req.newUsername : (req.value || oldUser);
+        const newPassword = (req.newPassword && req.newPassword !== '-') ? req.newPassword : (req.newPwd || (usersDB[oldUser] ? usersDB[oldUser].password : 'pass123'));
 
         if (usersDB[oldUser]) {
-            // Buat akun dengan username dan password baru, lalu hapus akun lama
+            // Pindahkan data ke username baru (NIP) dan/atau password baru
             usersDB[newUsername] = {
                 username: newUsername,
                 password: newPassword,
                 role: usersDB[oldUser].role,
                 pegawaiId: usersDB[oldUser].pegawaiId
             };
-            delete usersDB[oldUser];
 
-            // Perbarui kepemilikan data agar tetap terikat dengan username baru
-            dataPM.forEach(pm => { if(pm.createdByAccount === oldUser) pm.createdByAccount = newUsername; });
-            dataPegawai.forEach(peg => { if(peg.createdByAccount === oldUser) peg.createdByAccount = newUsername; });
-            dataPerkembangan.forEach(perk => { if(perk.createdByAccount === oldUser) perk.createdByAccount = newUsername; });
+            if (oldUser !== newUsername) {
+                delete usersDB[oldUser];
+
+                // Migrasi kepemilikan data ke username baru
+                dataPM.forEach(pm => { if (pm.createdByAccount === oldUser) pm.createdByAccount = newUsername; });
+                dataPegawai.forEach(peg => { if (peg.createdByAccount === oldUser) peg.createdByAccount = newUsername; });
+                dataPerkembangan.forEach(perk => { if (perk.createdByAccount === oldUser) perk.createdByAccount = newUsername; });
+            }
         }
 
         saveData();
@@ -162,7 +163,7 @@ function rejectAccountRequest(reqId) {
         req.status = 'rejected';
         saveData();
         renderPwdRequestsTable();
-        showToast('Permintaan ditolak.');
+        showToast('Permintaan perubahan akun ditolak.');
     }
 }
 
@@ -222,7 +223,6 @@ function handleLogin(e) {
     }
 }
 
-// SIMPAN PEGAWAI PERTAMA KALI DENGAN FOTO WAJIB
 function saveInitPegawai(e) {
     e.preventDefault();
     const fotoInput = document.getElementById('init-pegawai-foto');
@@ -265,95 +265,39 @@ function handleLogout() {
     document.getElementById('tab-admin-btn').classList.add('hidden');
 }
 
-function openResetPasswordModal() {
-    document.getElementById('modal-reset-pwd').classList.remove('hidden');
-}
-function closeResetPasswordModal() {
-    document.getElementById('modal-reset-pwd').classList.add('hidden');
-}
-
-function submitPasswordResetRequest(e) {
-    e.preventDefault();
-    const username = document.getElementById('reset-pwd-username').value.trim();
-    const newPwd = document.getElementById('reset-pwd-new').value.trim();
-
-    if (!usersDB[username]) {
-        alert('Username tidak ditemukan!');
+async function saveData() {
+    const statusEl = document.getElementById('sync-status');
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("GANTI_DENGAN")) {
+        showToast('Data disimpan lokal.');
         return;
     }
 
-    const req = {
-        id: 'REQ_' + Date.now(),
-        username: username,
-        newPwd: newPwd,
-        status: 'pending',
-        time: new Date().toISOString()
-    };
+    try {
+        statusEl.className = "text-xs bg-amber-500 text-white px-2.5 py-1 rounded-full font-medium flex items-center gap-1";
+        statusEl.innerHTML = `<i class="fa-solid fa-rotate animate-spin"></i> Menyimpan ke Cloud...`;
 
-    pwdRequests.push(req);
-    saveData();
-    closeResetPasswordModal();
-    alert('Permintaan pergantian password berhasil dikirim. Menunggu persetujuan Admin.');
-}
+        const payload = {
+            pm: dataPM,
+            pegawai: dataPegawai,
+            perkembangan: dataPerkembangan,
+            usersDB: usersDB,
+            pwdRequests: pwdRequests
+        };
 
-function renderPwdRequestsTable() {
-    const tbody = document.getElementById('pwd-requests-table-body');
-    if (!tbody) return;
-    tbody.innerHTML = '';
+        await fetch(APPS_SCRIPT_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(payload)
+        });
 
-    const pendingReqs = pwdRequests.filter(r => r.status === 'pending');
-    document.getElementById('pwd-req-badge').innerText = pendingReqs.length;
-    if(pendingReqs.length > 0) {
-        document.getElementById('pwd-req-badge').classList.remove('hidden');
-    } else {
-        document.getElementById('pwd-req-badge').classList.add('hidden');
-    }
-
-    pwdRequests.forEach(req => {
-        const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
-        tr.innerHTML = `
-            <td class="p-3 font-mono text-xs">${formatDateWithTime(req.time)}</td>
-            <td class="p-3 font-semibold text-slate-800">${req.username}</td>
-            <td class="p-3 font-mono text-indigo-600">${req.newPwd}</td>
-            <td class="p-3">
-                <span class="px-2 py-1 rounded-md text-xs font-medium ${req.status === 'pending' ? 'bg-amber-100 text-amber-700' : (req.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700')}">
-                    ${req.status.toUpperCase()}
-                </span>
-            </td>
-            <td class="p-3 text-center">
-                ${req.status === 'pending' ? `
-                    <div class="flex items-center justify-center space-x-2">
-                        <button onclick="approvePasswordRequest('${req.id}')" class="px-3 py-1 bg-emerald-600 text-white text-xs rounded hover:bg-emerald-700"><i class="fa-solid fa-check mr-1"></i> Setujui</button>
-                        <button onclick="rejectPasswordRequest('${req.id}')" class="px-3 py-1 bg-rose-600 text-white text-xs rounded hover:bg-rose-700"><i class="fa-solid fa-xmark mr-1"></i> Tolak</button>
-                    </div>
-                ` : '-'}
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-function approvePasswordRequest(reqId) {
-    const req = pwdRequests.find(r => r.id === reqId);
-    if (req) {
-        req.status = 'approved';
-        if (usersDB[req.username]) {
-            usersDB[req.username].password = req.newPwd;
-        }
-        saveData();
-        renderPwdRequestsTable();
-        showToast(`Password untuk ${req.username} berhasil diubah!`);
-    }
-}
-
-function rejectPasswordRequest(reqId) {
-    const req = pwdRequests.find(r => r.id === reqId);
-    if (req) {
-        req.status = 'rejected';
-        saveData();
-        renderPwdRequestsTable();
-        showToast(`Permintaan ${req.username} ditolak.`);
+        statusEl.className = "text-xs bg-emerald-600 text-white px-2.5 py-1 rounded-full font-medium flex items-center gap-1";
+        statusEl.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Data Tersinkron ke Cloud`;
+        showToast('Berhasil disimpan & disinkronkan ke Google Sheets!');
+    } catch (error) {
+        console.error("Gagal menyimpan:", error);
+        statusEl.className = "text-xs bg-rose-600 text-white px-2.5 py-1 rounded-full font-medium flex items-center gap-1";
+        statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Gagal Menyimpan`;
     }
 }
 
@@ -367,9 +311,6 @@ async function loadDataFromCloud() {
     }
 
     try {
-        statusEl.className = "text-xs bg-amber-500 text-white px-2.5 py-1 rounded-full font-medium flex items-center gap-1";
-        statusEl.innerHTML = `<i class="fa-solid fa-rotate animate-spin"></i> Menghubungkan Cloud...`;
-
         const response = await fetch(APPS_SCRIPT_URL);
         const result = await response.json();
 
@@ -377,6 +318,7 @@ async function loadDataFromCloud() {
             dataPM = result.pm;
             dataPegawai = result.pegawai || [];
             dataPerkembangan = result.perkembangan || [];
+            
             if (result.usersDB) usersDB = Object.assign(usersDB, result.usersDB);
             if (result.pwdRequests) pwdRequests = result.pwdRequests;
             
@@ -411,87 +353,6 @@ function initDefaultData() {
     ];
 }
 
-// SIMPAN DATA KE CLOUD (TERMASUK USERS & PWD REQUESTS)
-async function saveData() {
-    const statusEl = document.getElementById('sync-status');
-    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("GANTI_DENGAN")) {
-        showToast('Data disimpan lokal.');
-        return;
-    }
-
-    try {
-        statusEl.className = "text-xs bg-amber-500 text-white px-2.5 py-1 rounded-full font-medium flex items-center gap-1";
-        statusEl.innerHTML = `<i class="fa-solid fa-rotate animate-spin"></i> Menyimpan ke Cloud...`;
-
-        const payload = {
-            pm: dataPM,
-            pegawai: dataPegawai,
-            perkembangan: dataPerkembangan,
-            usersDB: usersDB,
-            pwdRequests: pwdRequests // Memastikan permintaan ganti password ikut terkirim ke cloud
-        };
-
-        await fetch(APPS_SCRIPT_URL, {
-            method: "POST",
-            mode: "no-cors",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify(payload)
-        });
-
-        statusEl.className = "text-xs bg-emerald-600 text-white px-2.5 py-1 rounded-full font-medium flex items-center gap-1";
-        statusEl.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Data Tersinkron ke Cloud`;
-        showToast('Berhasil disimpan & disinkronkan ke Google Sheets!');
-    } catch (error) {
-        console.error("Gagal menyimpan:", error);
-        statusEl.className = "text-xs bg-rose-600 text-white px-2.5 py-1 rounded-full font-medium flex items-center gap-1";
-        statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Gagal Menyimpan`;
-    }
-}
-
-// LOAD DATA DARI CLOUD (MEMUAT KEMBALI USERS & PWD REQUESTS)
-async function loadDataFromCloud() {
-    const statusEl = document.getElementById('sync-status');
-    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("GANTI_DENGAN")) {
-        statusEl.className = "text-xs bg-rose-600 text-white px-2.5 py-1 rounded-full font-medium flex items-center gap-1";
-        statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> URL Apps Script Belum Diset`;
-        initDefaultData();
-        return;
-    }
-
-    try {
-        const response = await fetch(APPS_SCRIPT_URL);
-        const result = await response.json();
-
-        if (result && result.pm) {
-            dataPM = result.pm;
-            dataPegawai = result.pegawai || [];
-            dataPerkembangan = result.perkembangan || [];
-            
-            // Sinkronisasi database akun dan request password dari cloud jika tersedia
-            if (result.usersDB) {
-                usersDB = Object.assign(usersDB, result.usersDB);
-            }
-            if (result.pwdRequests) {
-                pwdRequests = result.pwdRequests;
-            }
-            
-            statusEl.className = "text-xs bg-emerald-600 text-white px-2.5 py-1 rounded-full font-medium flex items-center gap-1";
-            statusEl.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i> Terhubung ke Google Sheets`;
-        } else {
-            initDefaultData();
-        }
-    } catch (error) {
-        console.error("Gagal memuat data:", error);
-        statusEl.className = "text-xs bg-rose-600 text-white px-2.5 py-1 rounded-full font-medium flex items-center gap-1";
-        statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Gagal Sinkronisasi`;
-        initDefaultData();
-    }
-
-    renderPMTable();
-    renderPegawaiTable();
-    renderPerkembanganTable();
-    renderPwdRequestsTable(); // Memperbarui tabel approval di akun admin secara berkala
-}
 function canUserModify(itemOwnerUsername) {
     if (!currentUser) return false;
     if (currentUser.role === 'admin') return true;
@@ -619,21 +480,17 @@ function updateDropdownOptions() {
     const peksosList = dataPegawai.filter(p => p.jabatan === 'Pekerja Sosial' || p.jabatan === 'Ketua Pokja');
     peksosSelect.innerHTML = peksosList.map(p => `<option value="${p.nama}">${p.nama}</option>`).join('');
 
-    // --- LOGIKA PEMBATASAN PETUGAS PENCATAT SESUAI AKUN LOGIN ---
     if (currentUser) {
         if (currentUser.role === 'admin') {
-            // Jika admin, tampilkan seluruh daftar pegawai
             perkPetugasSelect.innerHTML = dataPegawai.map(p => `<option value="${p.nama}">${p.nama} (${p.jabatan})</option>`).join('');
+            perkPetugasSelect.removeAttribute("disabled");
         } else {
-            // Jika user biasa, cari data pegawai yang terhubung dengan akun ini (berdasarkan pegawaiId)
             const myPegawai = dataPegawai.find(p => p.id === currentUser.pegawaiId || p.createdByAccount === currentUser.username);
             
             if (myPegawai) {
-                // Kunci hanya menampilkan namanya sendiri dan disable agar tidak bisa diubah
                 perkPetugasSelect.innerHTML = `<option value="${myPegawai.nama}" selected>${myPegawai.nama} (${myPegawai.jabatan})</option>`;
-                perkPetugasSelect.setAttribute("disabled", "true"); // Mengunci elemen select
+                perkPetugasSelect.setAttribute("disabled", "true");
             } else {
-                // Fallback jika data pegawai belum sinkron
                 perkPetugasSelect.innerHTML = `<option value="${currentUser.username}">${currentUser.username}</option>`;
                 perkPetugasSelect.setAttribute("disabled", "true");
             }
@@ -687,7 +544,6 @@ function savePM(e) {
     }
 }
 
-// SIMPAN PEGAWAI DARI MODAL DENGAN CEK FOTO WAJIB
 function savePegawai(e) {
     e.preventDefault();
     const id = document.getElementById('pegawai-id').value || 'PEG' + String(Date.now()).slice(-4);
@@ -860,6 +716,7 @@ function openPMModal(editId = null) {
     }
     document.getElementById('modal-pm').classList.remove('hidden');
 }
+
 function closePMModal() { document.getElementById('modal-pm').classList.add('hidden'); }
 function editPM(id) { openPMModal(id); }
 
@@ -878,13 +735,14 @@ function openPegawaiModal(editId = null) {
             document.getElementById('pegawai-jabatan').value = peg.jabatan;
             document.getElementById('pegawai-pokja').value = peg.pokja;
             if (peg.foto) {
-                document.getElementById('pegawai-foto').removeAttribute('required'); // Opsional jika sudah ada foto saat edit
+                document.getElementById('pegawai-foto').removeAttribute('required');
             }
             document.getElementById('modal-pegawai-title').innerText = 'Edit Data Pegawai';
         }
     }
     document.getElementById('modal-pegawai').classList.remove('hidden');
 }
+
 function closePegawaiModal() { document.getElementById('modal-pegawai').classList.add('hidden'); }
 function editPegawai(id) { openPegawaiModal(id); }
 
@@ -920,6 +778,7 @@ function openPerkembanganModal(editId = null) {
     }
     document.getElementById('modal-perkembangan').classList.remove('hidden');
 }
+
 function closePerkembanganModal() { document.getElementById('modal-perkembangan').classList.add('hidden'); }
 function editPerkembangan(id) { openPerkembanganModal(id); }
 
