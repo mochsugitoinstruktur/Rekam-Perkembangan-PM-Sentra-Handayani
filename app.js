@@ -34,6 +34,142 @@ window.onload = function() {
     }, 1000);
 };
 
+function toggleReqType() {
+    const type = document.getElementById('req-type').value;
+    const pwdWrapper = document.getElementById('wrapper-new-pwd');
+    const nipWrapper = document.getElementById('wrapper-new-nip');
+    const pwdInput = document.getElementById('reset-pwd-new');
+    const nipInput = document.getElementById('req-new-nip');
+
+    if (type === 'password') {
+        pwdWrapper.classList.remove('hidden');
+        nipWrapper.classList.add('hidden');
+        pwdInput.setAttribute('required', 'true');
+        nipInput.removeAttribute('required');
+    } else {
+        pwdWrapper.classList.add('hidden');
+        nipWrapper.classList.remove('hidden');
+        pwdInput.removeAttribute('required');
+        nipInput.setAttribute('required', 'true');
+    }
+}
+
+function submitAccountChangeRequest(e) {
+    e.preventDefault();
+    const oldUsername = document.getElementById('req-old-username').value.trim();
+    const reqType = document.getElementById('req-type').value;
+    const newPwd = document.getElementById('reset-pwd-new').value.trim();
+    const newNip = document.getElementById('req-new-nip').value.trim();
+
+    if (!usersDB[oldUsername]) {
+        alert('Username lama tidak ditemukan dalam sistem!');
+        return;
+    }
+
+    const req = {
+        id: 'REQ_' + Date.now(),
+        username: oldUsername,
+        type: reqType, // 'password' atau 'username'
+        value: reqType === 'password' ? newPwd : newNip, // Menyimpan password baru atau NIP baru
+        status: 'pending',
+        time: new Date().toISOString()
+    };
+
+    pwdRequests.push(req);
+    saveData();
+    closeResetPasswordModal();
+    alert('Permintaan perubahan berhasil dikirim. Menunggu persetujuan Master Admin.');
+}
+
+function renderPwdRequestsTable() {
+    const tbody = document.getElementById('pwd-requests-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const pendingReqs = pwdRequests.filter(r => r.status === 'pending');
+    document.getElementById('pwd-req-badge').innerText = pendingReqs.length;
+    if(pendingReqs.length > 0) {
+        document.getElementById('pwd-req-badge').classList.remove('hidden');
+    } else {
+        document.getElementById('pwd-req-badge').classList.add('hidden');
+    }
+
+    pwdRequests.forEach(req => {
+        const typeLabel = req.type === 'username' ? '<span class="text-indigo-600 font-bold">Ganti Username (NIP)</span>' : 'Ganti Password';
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
+        tr.innerHTML = `
+            <td class="p-3 font-mono text-xs">${formatDateWithTime(req.time)}</td>
+            <td class="p-3 font-semibold text-slate-800">${req.username}</td>
+            <td class="p-3 text-xs">${typeLabel}</td>
+            <td class="p-3 font-mono text-indigo-600 font-bold">${req.value}</td>
+            <td class="p-3">
+                <span class="px-2 py-1 rounded-md text-xs font-medium ${req.status === 'pending' ? 'bg-amber-100 text-amber-700' : (req.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700')}">
+                    ${req.status.toUpperCase()}
+                </span>
+            </td>
+            <td class="p-3 text-center">
+                ${req.status === 'pending' ? `
+                    <div class="flex items-center justify-center space-x-2">
+                        <button onclick="approveAccountRequest('${req.id}')" class="px-3 py-1 bg-emerald-600 text-white text-xs rounded hover:bg-emerald-700"><i class="fa-solid fa-check mr-1"></i> Setujui</button>
+                        <button onclick="rejectAccountRequest('${req.id}')" class="px-3 py-1 bg-rose-600 text-white text-xs rounded hover:bg-rose-700"><i class="fa-solid fa-xmark mr-1"></i> Tolak</button>
+                    </div>
+                ` : '-'}
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function approveAccountRequest(reqId) {
+    const req = pwdRequests.find(r => r.id === reqId);
+    if (req) {
+        req.status = 'approved';
+        
+        if (req.type === 'password') {
+            if (usersDB[req.username]) {
+                usersDB[req.username].password = req.value;
+            }
+        } else if (req.type === 'username') {
+            const oldUser = req.username;
+            const newUsernameByNip = req.value; // NIP baru dijadikan username
+
+            if (usersDB[oldUser]) {
+                // Pindahkan data akun ke username baru berdasarkan NIP
+                usersDB[newUsernameByNip] = {
+                    username: newUsernameByNip,
+                    password: usersDB[oldUser].password,
+                    role: usersDB[oldUser].role,
+                    pegawaiId: usersDB[oldUser].pegawaiId
+                };
+                delete usersDB[oldUser]; // Hapus username lama
+
+                // Perbarui kepemilikan data (createdByAccount) agar hak akses tetap sinkron
+                dataPM.forEach(pm => { if(pm.createdByAccount === oldUser) pm.createdByAccount = newUsernameByNip; });
+                dataPegawai.forEach(peg => { if(peg.createdByAccount === oldUser) peg.createdByAccount = newUsernameByNip; });
+                dataPerkembangan.forEach(perk => { if(perk.createdByAccount === oldUser) perk.createdByAccount = newUsernameByNip; });
+            }
+        }
+
+        saveData();
+        renderPwdRequestsTable();
+        renderPMTable();
+        renderPegawaiTable();
+        renderPerkembanganTable();
+        showToast('Permintaan berhasil disetujui & diperbarui!');
+    }
+}
+
+function rejectAccountRequest(reqId) {
+    const req = pwdRequests.find(r => r.id === reqId);
+    if (req) {
+        req.status = 'rejected';
+        saveData();
+        renderPwdRequestsTable();
+        showToast('Permintaan ditolak.');
+    }
+}
+
 function loadSession() {
     const saved = localStorage.getItem('sh_logged_user');
     if (saved) {
