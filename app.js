@@ -57,8 +57,8 @@ function toggleReqType() {
 function submitAccountChangeRequest(e) {
     e.preventDefault();
     const oldUsername = document.getElementById('req-old-username').value.trim();
-    const newUsername = document.getElementById('req-new-username').value.trim();
-    const newPassword = document.getElementById('req-new-password').value.trim();
+    const newUsernameInput = document.getElementById('req-new-username');
+    const newPasswordInput = document.getElementById('req-new-password');
 
     if (!usersDB[oldUsername]) {
         alert('Username lama tidak ditemukan dalam sistem!');
@@ -68,8 +68,8 @@ function submitAccountChangeRequest(e) {
     const req = {
         id: 'REQ_' + Date.now(),
         username: oldUsername,
-        newUsername: newUsername,
-        newPassword: newPassword,
+        newUsername: newUsernameInput ? newUsernameInput.value.trim() : '-',
+        newPassword: newPasswordInput ? newPasswordInput.value.trim() : '-',
         status: 'pending',
         time: new Date().toISOString()
     };
@@ -77,7 +77,7 @@ function submitAccountChangeRequest(e) {
     pwdRequests.push(req);
     saveData();
     closeResetPasswordModal();
-    alert('Permintaan perubahan username dan password berhasil dikirim ke Master Admin.');
+    alert('Permintaan perubahan berhasil dikirim ke Master Admin.');
 }
 
 function renderPwdRequestsTable() {
@@ -94,13 +94,17 @@ function renderPwdRequestsTable() {
     }
 
     pwdRequests.forEach(req => {
+        // Menangani data lama yang mungkin menggunakan properti 'value' atau format lain
+        const displayUsername = req.newUsername || req.value || '-';
+        const displayPassword = req.newPassword || '-';
+
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
         tr.innerHTML = `
             <td class="p-3 font-mono text-xs">${formatDateWithTime(req.time)}</td>
             <td class="p-3 font-semibold text-slate-800">${req.username}</td>
-            <td class="p-3 font-mono text-indigo-600 font-bold">${req.newUsername || '-'}</td>
-            <td class="p-3 font-mono text-emerald-600 font-bold">${req.newPassword || '-'}</td>
+            <td class="p-3 font-mono text-indigo-600 font-bold">${displayUsername}</td>
+            <td class="p-3 font-mono text-emerald-600 font-bold">${displayPassword}</td>
             <td class="p-3">
                 <span class="px-2 py-1 rounded-md text-xs font-medium ${req.status === 'pending' ? 'bg-amber-100 text-amber-700' : (req.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700')}">
                     ${req.status.toUpperCase()}
