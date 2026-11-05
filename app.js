@@ -279,6 +279,7 @@ function initDefaultData() {
     ];
 }
 
+// SIMPAN DATA KE CLOUD (TERMASUK USERS & PWD REQUESTS)
 async function saveData() {
     const statusEl = document.getElementById('sync-status');
     if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("GANTI_DENGAN")) {
@@ -295,7 +296,7 @@ async function saveData() {
             pegawai: dataPegawai,
             perkembangan: dataPerkembangan,
             usersDB: usersDB,
-            pwdRequests: pwdRequests
+            pwdRequests: pwdRequests // Memastikan permintaan ganti password ikut terkirim ke cloud
         };
 
         await fetch(APPS_SCRIPT_URL, {
@@ -307,7 +308,7 @@ async function saveData() {
 
         statusEl.className = "text-xs bg-emerald-600 text-white px-2.5 py-1 rounded-full font-medium flex items-center gap-1";
         statusEl.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Data Tersinkron ke Cloud`;
-        showToast('Berhasil disimpan ke Google Sheets!');
+        showToast('Berhasil disimpan & disinkronkan ke Google Sheets!');
     } catch (error) {
         console.error("Gagal menyimpan:", error);
         statusEl.className = "text-xs bg-rose-600 text-white px-2.5 py-1 rounded-full font-medium flex items-center gap-1";
@@ -315,6 +316,50 @@ async function saveData() {
     }
 }
 
+// LOAD DATA DARI CLOUD (MEMUAT KEMBALI USERS & PWD REQUESTS)
+async function loadDataFromCloud() {
+    const statusEl = document.getElementById('sync-status');
+    if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("GANTI_DENGAN")) {
+        statusEl.className = "text-xs bg-rose-600 text-white px-2.5 py-1 rounded-full font-medium flex items-center gap-1";
+        statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> URL Apps Script Belum Diset`;
+        initDefaultData();
+        return;
+    }
+
+    try {
+        const response = await fetch(APPS_SCRIPT_URL);
+        const result = await response.json();
+
+        if (result && result.pm) {
+            dataPM = result.pm;
+            dataPegawai = result.pegawai || [];
+            dataPerkembangan = result.perkembangan || [];
+            
+            // Sinkronisasi database akun dan request password dari cloud jika tersedia
+            if (result.usersDB) {
+                usersDB = Object.assign(usersDB, result.usersDB);
+            }
+            if (result.pwdRequests) {
+                pwdRequests = result.pwdRequests;
+            }
+            
+            statusEl.className = "text-xs bg-emerald-600 text-white px-2.5 py-1 rounded-full font-medium flex items-center gap-1";
+            statusEl.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i> Terhubung ke Google Sheets`;
+        } else {
+            initDefaultData();
+        }
+    } catch (error) {
+        console.error("Gagal memuat data:", error);
+        statusEl.className = "text-xs bg-rose-600 text-white px-2.5 py-1 rounded-full font-medium flex items-center gap-1";
+        statusEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Gagal Sinkronisasi`;
+        initDefaultData();
+    }
+
+    renderPMTable();
+    renderPegawaiTable();
+    renderPerkembanganTable();
+    renderPwdRequestsTable(); // Memperbarui tabel approval di akun admin secara berkala
+}
 function canUserModify(itemOwnerUsername) {
     if (!currentUser) return false;
     if (currentUser.role === 'admin') return true;
