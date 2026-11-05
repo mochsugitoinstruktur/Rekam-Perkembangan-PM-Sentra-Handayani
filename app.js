@@ -57,9 +57,8 @@ function toggleReqType() {
 function submitAccountChangeRequest(e) {
     e.preventDefault();
     const oldUsername = document.getElementById('req-old-username').value.trim();
-    const reqType = document.getElementById('req-type').value;
-    const newPwd = document.getElementById('reset-pwd-new').value.trim();
-    const newNip = document.getElementById('req-new-nip').value.trim();
+    const newUsername = document.getElementById('req-new-username').value.trim();
+    const newPassword = document.getElementById('req-new-password').value.trim();
 
     if (!usersDB[oldUsername]) {
         alert('Username lama tidak ditemukan dalam sistem!');
@@ -69,8 +68,8 @@ function submitAccountChangeRequest(e) {
     const req = {
         id: 'REQ_' + Date.now(),
         username: oldUsername,
-        type: reqType, // 'password' atau 'username'
-        value: reqType === 'password' ? newPwd : newNip, // Menyimpan password baru atau NIP baru
+        newUsername: newUsername,
+        newPassword: newPassword,
         status: 'pending',
         time: new Date().toISOString()
     };
@@ -78,7 +77,7 @@ function submitAccountChangeRequest(e) {
     pwdRequests.push(req);
     saveData();
     closeResetPasswordModal();
-    alert('Permintaan perubahan berhasil dikirim. Menunggu persetujuan Master Admin.');
+    alert('Permintaan perubahan username dan password berhasil dikirim ke Master Admin.');
 }
 
 function renderPwdRequestsTable() {
@@ -95,14 +94,13 @@ function renderPwdRequestsTable() {
     }
 
     pwdRequests.forEach(req => {
-        const typeLabel = req.type === 'username' ? '<span class="text-indigo-600 font-bold">Ganti Username (NIP)</span>' : 'Ganti Password';
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
         tr.innerHTML = `
             <td class="p-3 font-mono text-xs">${formatDateWithTime(req.time)}</td>
             <td class="p-3 font-semibold text-slate-800">${req.username}</td>
-            <td class="p-3 text-xs">${typeLabel}</td>
-            <td class="p-3 font-mono text-indigo-600 font-bold">${req.value}</td>
+            <td class="p-3 font-mono text-indigo-600 font-bold">${req.newUsername || '-'}</td>
+            <td class="p-3 font-mono text-emerald-600 font-bold">${req.newPassword || '-'}</td>
             <td class="p-3">
                 <span class="px-2 py-1 rounded-md text-xs font-medium ${req.status === 'pending' ? 'bg-amber-100 text-amber-700' : (req.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700')}">
                     ${req.status.toUpperCase()}
@@ -125,30 +123,24 @@ function approveAccountRequest(reqId) {
     const req = pwdRequests.find(r => r.id === reqId);
     if (req) {
         req.status = 'approved';
-        
-        if (req.type === 'password') {
-            if (usersDB[req.username]) {
-                usersDB[req.username].password = req.value;
-            }
-        } else if (req.type === 'username') {
-            const oldUser = req.username;
-            const newUsernameByNip = req.value; // NIP baru dijadikan username
+        const oldUser = req.username;
+        const newUsername = req.newUsername;
+        const newPassword = req.newPassword;
 
-            if (usersDB[oldUser]) {
-                // Pindahkan data akun ke username baru berdasarkan NIP
-                usersDB[newUsernameByNip] = {
-                    username: newUsernameByNip,
-                    password: usersDB[oldUser].password,
-                    role: usersDB[oldUser].role,
-                    pegawaiId: usersDB[oldUser].pegawaiId
-                };
-                delete usersDB[oldUser]; // Hapus username lama
+        if (usersDB[oldUser]) {
+            // Buat akun dengan username dan password baru, lalu hapus akun lama
+            usersDB[newUsername] = {
+                username: newUsername,
+                password: newPassword,
+                role: usersDB[oldUser].role,
+                pegawaiId: usersDB[oldUser].pegawaiId
+            };
+            delete usersDB[oldUser];
 
-                // Perbarui kepemilikan data (createdByAccount) agar hak akses tetap sinkron
-                dataPM.forEach(pm => { if(pm.createdByAccount === oldUser) pm.createdByAccount = newUsernameByNip; });
-                dataPegawai.forEach(peg => { if(peg.createdByAccount === oldUser) peg.createdByAccount = newUsernameByNip; });
-                dataPerkembangan.forEach(perk => { if(perk.createdByAccount === oldUser) perk.createdByAccount = newUsernameByNip; });
-            }
+            // Perbarui kepemilikan data agar tetap terikat dengan username baru
+            dataPM.forEach(pm => { if(pm.createdByAccount === oldUser) pm.createdByAccount = newUsername; });
+            dataPegawai.forEach(peg => { if(peg.createdByAccount === oldUser) peg.createdByAccount = newUsername; });
+            dataPerkembangan.forEach(perk => { if(perk.createdByAccount === oldUser) perk.createdByAccount = newUsername; });
         }
 
         saveData();
@@ -156,7 +148,7 @@ function approveAccountRequest(reqId) {
         renderPMTable();
         renderPegawaiTable();
         renderPerkembanganTable();
-        showToast('Permintaan berhasil disetujui & diperbarui!');
+        showToast('Permintaan akun berhasil disetujui & diperbarui!');
     }
 }
 
