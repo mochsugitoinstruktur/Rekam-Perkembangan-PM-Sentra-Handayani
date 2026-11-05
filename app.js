@@ -486,7 +486,27 @@ function updateDropdownOptions() {
 
     const peksosList = dataPegawai.filter(p => p.jabatan === 'Pekerja Sosial' || p.jabatan === 'Ketua Pokja');
     peksosSelect.innerHTML = peksosList.map(p => `<option value="${p.nama}">${p.nama}</option>`).join('');
-    perkPetugasSelect.innerHTML = dataPegawai.map(p => `<option value="${p.nama}">${p.nama} (${p.jabatan})</option>`).join('');
+
+    // --- LOGIKA PEMBATASAN PETUGAS PENCATAT SESUAI AKUN LOGIN ---
+    if (currentUser) {
+        if (currentUser.role === 'admin') {
+            // Jika admin, tampilkan seluruh daftar pegawai
+            perkPetugasSelect.innerHTML = dataPegawai.map(p => `<option value="${p.nama}">${p.nama} (${p.jabatan})</option>`).join('');
+        } else {
+            // Jika user biasa, cari data pegawai yang terhubung dengan akun ini (berdasarkan pegawaiId)
+            const myPegawai = dataPegawai.find(p => p.id === currentUser.pegawaiId || p.createdByAccount === currentUser.username);
+            
+            if (myPegawai) {
+                // Kunci hanya menampilkan namanya sendiri dan disable agar tidak bisa diubah
+                perkPetugasSelect.innerHTML = `<option value="${myPegawai.nama}" selected>${myPegawai.nama} (${myPegawai.jabatan})</option>`;
+                perkPetugasSelect.setAttribute("disabled", "true"); // Mengunci elemen select
+            } else {
+                // Fallback jika data pegawai belum sinkron
+                perkPetugasSelect.innerHTML = `<option value="${currentUser.username}">${currentUser.username}</option>`;
+                perkPetugasSelect.setAttribute("disabled", "true");
+            }
+        }
+    }
 
     const pmOptions = dataPM.map(p => `<option value="${p.id}">${p.nama} - (${p.kasus})</option>`).join('');
     filterPerkembangan.innerHTML = `<option value="">-- Semua PM --</option>` + pmOptions;
