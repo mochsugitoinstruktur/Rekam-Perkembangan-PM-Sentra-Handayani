@@ -1,5 +1,5 @@
 // URL WEB APP GOOGLE APPS SCRIPT
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyspVLp63A0ugobjbfaizwgjThY8rFzB3yK-u2uKl1C7mGVYr-qxE4WwJcMdjrmvQ/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyDOUCYVo38JnkgJcbbwb6ergsTDbt-VpRH5e0t3FUWoEfL6ssBPUvce3Z8I9bCmLxw/exec";
 
 let dataPM = [];
 let dataPegawai = [];
