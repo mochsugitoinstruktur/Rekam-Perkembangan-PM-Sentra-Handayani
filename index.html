@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Rekam Perkembangan PM - Sentra Handayani</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-100 h-screen w-screen flex flex-col text-slate-800 overflow-hidden">
+
+    <!-- WELCOME SCREEN (Opacity Background 100%) -->
+    <div id="welcome-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center text-white text-center p-6 bg-slate-950">
+        <!-- Background Image Full 100% dengan Overlay Gelap -->
+        <div class="absolute inset-0 -z-10 bg-cover bg-center" style="background-image: url('P_20240605_085718.jpg');"></div>
+        <div class="absolute inset-0 -z-10 bg-slate-900/85"></div>
+
+        <div class="max-w-2xl bg-slate-900/80 p-8 rounded-2xl border border-white/10 backdrop-blur-md shadow-2xl space-y-6">
+            <div class="flex justify-center">
+                <div class="p-3 bg-white rounded-2xl shadow-lg">
+                    <img src="LOGO KEMENSOS - 7.png" alt="Logo Kemensos" class="h-20 object-contain">
+                </div>
+            </div>
+            <div>
+                <h1 class="text-3xl font-extrabold tracking-wider uppercase text-amber-400">KEMENTERIAN SOSIAL RI</h1>
+                <h2 class="text-2xl font-bold tracking-wide mt-1">SENTRA "HANDAYANI" JAKARTA</h2>
+                <p class="text-sm text-slate-300 mt-2">Sistem Rekam Perkembangan Penerima Manfaat (PM) Berbasis Web Integratif</p>
+            </div>
+            <button onclick="goToLogin()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-8 py-3 rounded-xl shadow-lg hover:shadow-indigo-500/50 transition transform hover:-translate-y-0.5">
+                Masuk ke Aplikasi <i class="fa-solid fa-arrow-right ml-2"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- HALAMAN LOGIN & REGISTRASI PEGAWAI -->
+    <div id="login-screen" class="hidden fixed inset-0 z-40 flex items-center justify-center p-4 bg-slate-950">
+        <div class="absolute inset-0 -z-10 bg-cover bg-center" style="background-image: url('P_20240605_085718.jpg');"></div>
+        <div class="absolute inset-0 -z-10 bg-slate-900/85"></div>
+
+        <!-- FORM LOGIN -->
+        <div id="login-box" class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 border border-slate-200">
+            <div class="text-center mb-6">
+                <img src="LOGO KEMENSOS - 7.png" alt="Logo Kemensos" class="h-14 mx-auto mb-3 object-contain">
+                <h3 class="text-xl font-bold text-slate-800">Login Petugas</h3>
+                <p class="text-xs text-slate-500">Masukan Username dan Password Akun Anda</p>
+            </div>
+            <form onsubmit="handleLogin(event)" class="space-y-4 text-sm">
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Username</label>
+                    <input type="text" id="login-username" required class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="user1..user100 / admin">
+                </div>
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Password</label>
+                    <input type="password" id="login-password" required class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="••••••••">
+                </div>
+                <div class="flex justify-between items-center text-xs">
+                    <button type="button" onclick="openResetPasswordModal()" class="text-indigo-600 hover:underline">Minta Ganti Password?</button>
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-lg transition shadow">
+                    Masuk
+                </button>
+            </form>
+            <div class="mt-4 text-xs text-slate-400 text-center">
+                Default Password Akun: <span class="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">pass123</span> | Admin: <span class="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">admin / admin123</span>
+            </div>
+        </div>
+
+        <!-- FORM PEGAWAI PERTAMA KALI (MANDATORY REGISTRATION + WAJIB FOTO) -->
+        <div id="pegawai-init-box" class="hidden w-full max-w-lg bg-white rounded-2xl shadow-2xl p-8 border border-slate-200">
+            <div class="text-center mb-6">
+                <i class="fa-solid fa-id-card-clip text-4xl text-indigo-600 mb-2"></i>
+                <h3 class="text-xl font-bold text-slate-800">Lengkapi Profil Pegawai</h3>
+                <p class="text-xs text-slate-500">Akun Anda belum terhubung dengan data pegawai. Silakan isi biodata dan upload foto profil Anda.</p>
+            </div>
+            <form id="form-init-pegawai" onsubmit="saveInitPegawai(event)" class="space-y-4 text-xs sm:text-sm">
+                <div>
+                    <label class="font-medium text-slate-700 block mb-1">Nama Lengkap *</label>
+                    <input type="text" id="init-pegawai-nama" required class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="font-medium text-slate-700 block mb-1">NIP (Nomor Induk Pegawai) *</label>
+                    <input type="text" id="init-pegawai-nip" required class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="font-medium text-slate-700 block mb-1">Jabatan *</label>
+                        <select id="init-pegawai-jabatan" required class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="Pekerja Sosial">Pekerja Sosial</option>
+                            <option value="Ketua Pokja">Ketua Pokja</option>
+                            <option value="Instruktur">Instruktur</option>
+                            <option value="Pendamping">Pendamping</option>
+                            <option value="Pengasuh">Pengasuh</option>
+                            <option value="Psikolog">Psikolog</option>
+                            <option value="Fisioterapi">Fisioterapi</option>
+                            <option value="Dokter">Dokter</option>
+                            <option value="Perawat">Perawat</option>
+                            <option value="Petugas Keamanan">Petugas Keamanan</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="font-medium text-slate-700 block mb-1">Kelompok Kerja (Pokja) *</label>
+                        <select id="init-pegawai-pokja" required class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="Pokja Disabilitas">Pokja Disabilitas</option>
+                            <option value="Pokja Lanjut Usia">Pokja Lanjut Usia</option>
+                            <option value="Pokja Napza">Pokja Napza</option>
+                            <option value="Pokja Anak">Pokja Anak</option>
+                            <option value="Pokja Residensial">Pokja Rehabilitasi</option>
+                            <option value="Pokja Humas">Pokja Humas</option>
+                            <option value="Pokja Umum">Pokja Umum</option>
+                            <option value="Pokja Data">Pokja Data</option>
+                            <option value="Pokja Tata Usaha">Pokja Tata Usaha</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="font-medium text-slate-700 block mb-1">Upload Foto Pegawai (Wajib) *</label>
+                    <input type="file" id="init-pegawai-foto" accept="image/*" required class="w-full border rounded-lg p-2 text-slate-500 text-xs bg-slate-50">
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-lg transition shadow">
+                    Simpan & Lanjutkan
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- TOP HEADER / NAVBAR (No Print) -->
+    <header class="bg-indigo-900 text-white shadow-lg no-print">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-wrap justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="p-1.5 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                    <img src="LOGO KEMENSOS - 7.png" alt="Logo Kemensos" class="h-9 object-contain">
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide">SENTRA HANDAYANI</h1>
+                    <p class="text-xs text-indigo-200">Aplikasi Rekam Perkembangan Penerima Manfaat</p>
+                </div>
+            </div>
+            <div class="flex space-x-2 mt-3 sm:mt-0 items-center">
+                <span id="sync-status" class="text-xs bg-amber-500 text-white px-2.5 py-1 rounded-full font-medium flex items-center gap-1">
+                    <i class="fa-solid fa-rotate animate-spin"></i> Menghubungkan Cloud...
+                </span>
+                
+                <div class="flex items-center gap-2 bg-indigo-950/60 px-3 py-1.5 rounded-lg border border-indigo-700/50">
+                    <i class="fa-solid fa-user-circle text-amber-400"></i>
+                    <span id="logged-user-label" class="text-xs font-semibold text-white">Guest</span>
+                    <button onclick="handleLogout()" title="Logout" class="ml-2 text-slate-300 hover:text-rose-400 text-xs">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+
+                <button onclick="exportRekapitulasiPDF()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs px-3 py-2 rounded-lg font-medium transition flex items-center gap-1 shadow">
+                    <i class="fa-solid fa-file-pdf"></i> Ekspor PDF
+                </button>
+                <button onclick="exportAllToCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-2 rounded-lg font-medium transition flex items-center gap-1 shadow">
+                    <i class="fa-solid fa-file-excel"></i> CSV
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- NAVIGATION TABS (No Print) -->
+    <div class="bg-white border-b border-slate-200 no-print sticky top-0 z-10 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 flex space-x-1 sm:space-x-4 overflow-x-auto">
+            <button id="tab-pm-btn" onclick="switchTab('pm')" class="tab-btn px-4 py-3 text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600 flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-users"></i> Data Penerima Manfaat
+            </button>
+            <button id="tab-pegawai-btn" onclick="switchTab('pegawai')" class="tab-btn px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-indigo-600 flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-id-card"></i> Data Pegawai / Petugas
+            </button>
+            <button id="tab-perkembangan-btn" onclick="switchTab('perkembangan')" class="tab-btn px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-indigo-600 flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-chart-line"></i> Rekam Perkembangan
+            </button>
+            <button id="tab-laporan-btn" onclick="switchTab('laporan')" class="tab-btn px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-indigo-600 flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-file-pdf"></i> Form Laporan Terkini
+            </button>
+            <button id="tab-admin-btn" onclick="switchTab('admin')" class="tab-btn hidden px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-amber-600 hover:text-amber-700 flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-user-shield"></i> Approval Password <span id="pwd-req-badge" class="bg-rose-500 text-white text-[10px] px-1.5 py-0.5 rounded-full hidden">0</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 overflow-hidden flex flex-col">
+
+        <div id="toast" class="hidden fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl z-50 flex items-center gap-3 transition-all duration-300">
+            <i class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+            <span id="toast-msg" class="text-sm">Operasi berhasil dilakukan!</span>
+        </div>
+
+        <!-- TAB 1: PENERIMA MANFAAT -->
+        <section id="tab-pm" class="tab-content h-full flex flex-col space-y-4">
+            <div class="flex-none flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800">Database Penerima Manfaat (PM)</h2>
+                    <p class="text-xs text-slate-500">Kelola data anak dan remaja penerima manfaat di Sentra Handayani</p>
+                </div>
+                <button onclick="openPMModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow">
+                    <i class="fa-solid fa-user-plus"></i> Tambah PM Baru
+                </button>
+            </div>
+
+            <div class="flex-1 min-h-0 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
+                <div class="flex-none p-4 border-b border-slate-200 bg-slate-50 flex flex-wrap gap-3 justify-between items-center">
+                    <input type="text" id="search-pm" oninput="renderPMTable()" placeholder="Cari Nama / Ibu Kandung / Kasus..." class="px-3 py-2 border rounded-lg text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <div class="text-xs text-slate-500 font-medium">Total: <span id="total-pm-count" class="font-bold text-indigo-600">0</span> PM</div>
+                </div>
+                
+                <div class="flex-1 overflow-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead class="bg-slate-100 text-slate-600 uppercase text-xs sticky top-0 z-10">
+                            <tr>
+                                <th class="p-3 bg-slate-100">Foto</th>
+                                <th class="p-3 bg-slate-100">Nama Lengkap</th>
+                                <th class="p-3 bg-slate-100">Ibu Kandung</th>
+                                <th class="p-3 bg-slate-100">JK</th>
+                                <th class="p-3 bg-slate-100">Kasus</th>
+                                <th class="p-3 bg-slate-100">Status</th>
+                                <th class="p-3 bg-slate-100">Peksos</th>
+                                <th class="p-3 bg-slate-100">Ditambahkan Oleh</th>
+                                <th class="p-3 bg-slate-100">Tgl Masuk</th>
+                                <th class="p-3 bg-slate-100">Tgl Terminasi</th>
+                                <th class="p-3 bg-slate-100 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pm-table-body" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: PEGAWAI / PETUGAS -->
+        <section id="tab-pegawai" class="tab-content hidden h-full flex flex-col space-y-4">
+            <div class="flex-none flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800">Data Pegawai & Petugas</h2>
+                    <p class="text-xs text-slate-500">Daftar Pekerja Sosial (Peksos), Pembina, dan Kepala Pokja</p>
+                </div>
+                <button onclick="openPegawaiModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow">
+                    <i class="fa-solid fa-user-shield"></i> Tambah Pegawai
+                </button>
+            </div>
+
+            <div class="flex-1 min-h-0 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
+                <div class="flex-1 overflow-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead class="bg-slate-100 text-slate-600 uppercase text-xs sticky top-0 z-10">
+                            <tr>
+                                <th class="p-3 bg-slate-100">Foto</th>
+                                <th class="p-3 bg-slate-100">Nama Pegawai</th>
+                                <th class="p-3 bg-slate-100">NIP</th>
+                                <th class="p-3 bg-slate-100">Jabatan</th>
+                                <th class="p-3 bg-slate-100">Kelompok Kerja (Pokja)</th>
+                                <th class="p-3 bg-slate-100">Akun Linked</th>
+                                <th class="p-3 bg-slate-100 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pegawai-table-body" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: REKAM PERKEMBANGAN -->
+        <section id="tab-perkembangan" class="tab-content hidden h-full flex flex-col space-y-4">
+            <div class="flex-none flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-800">Catatan Jurnal Perkembangan PM</h2>
+                    <p class="text-xs text-slate-500">Rekam perkembangan harian, sosial, medis, dan psikologis PM</p>
+                </div>
+                <button onclick="openPerkembanganModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow">
+                    <i class="fa-solid fa-plus-circle"></i> Input Catatan Perkembangan
+                </button>
+            </div>
+
+            <div class="flex-1 min-h-0 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
+                <div class="flex-none p-4 border-b border-slate-200 bg-slate-50 flex flex-wrap gap-3 items-center">
+                    <label class="text-xs font-semibold text-slate-600">Filter PM:</label>
+                    <select id="filter-perkembangan-pm" onchange="renderPerkembanganTable()" class="px-3 py-2 border rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">-- Semua PM --</option>
+                    </select>
+                </div>
+                
+                <div class="flex-1 overflow-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead class="bg-slate-100 text-slate-600 uppercase text-xs sticky top-0 z-10">
+                            <tr>
+                                <th class="p-3 bg-slate-100">Tanggal Catatan</th>
+                                <th class="p-3 bg-slate-100">Nama PM</th>
+                                <th class="p-3 bg-slate-100">Kategori</th>
+                                <th class="p-3 bg-slate-100">Deskripsi Perkembangan</th>
+                                <th class="p-3 bg-slate-100">Rekomendasi / Tindak Lanjut</th>
+                                <th class="p-3 bg-slate-100">Petugas Pencatat</th>
+                                <th class="p-3 bg-slate-100">Dibuat Oleh</th>
+                                <th class="p-3 bg-slate-100 text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="perkembangan-table-body" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: PRATINJAU FORM LAPORAN PDF -->
+        <section id="tab-laporan" class="tab-content hidden h-full flex flex-col space-y-4">
+            <div class="flex-none bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-4">
+                <div class="flex flex-wrap items-center gap-3">
+                    <label class="font-semibold text-sm">Pilih Jenis Laporan PDF:</label>
+                    <select id="select-tipe-laporan" onchange="toggleLaporanType()" class="px-3 py-2 border rounded-lg text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium">
+                        <option value="individu">Form Terkini per PM (Nama PM)</option>
+                        <option value="peksos">Filter Berdasarkan Nama Peksos</option>
+                        <option value="kasus">Filter Berdasarkan Kategori Kasus</option>
+                        <option value="rekapitulasi">Rekapitulasi Seluruh Database PM</option>
+                    </select>
+
+                    <div id="wrapper-select-pm" class="flex items-center space-x-2">
+                        <label class="font-semibold text-sm">PM:</label>
+                        <select id="select-laporan-pm" onchange="generateReport()" class="px-3 py-2 border rounded-lg text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 min-w-[200px]"></select>
+                    </div>
+
+                    <div id="wrapper-select-peksos" class="hidden flex items-center space-x-2">
+                        <label class="font-semibold text-sm">Peksos:</label>
+                        <select id="select-laporan-peksos" onchange="generateFilterReport()" class="px-3 py-2 border rounded-lg text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 min-w-[200px]"></select>
+                    </div>
+
+                    <div id="wrapper-select-kasus" class="hidden flex items-center space-x-2">
+                        <label class="font-semibold text-sm">Kasus:</label>
+                        <select id="select-laporan-kasus" onchange="generateFilterReport()" class="px-3 py-2 border rounded-lg text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 min-w-[200px]">
+                            <option value="Tawuran">Tawuran</option>
+                            <option value="Teroris">Teroris</option>
+                            <option value="Eksnapiter">Eksnapiter</option>
+                            <option value="Napza">Napza</option>
+                            <option value="Asusila">Asusila</option>
+                            <option value="Bullying">Bullying</option>
+                            <option value="Korban Bullying">Korban Bullying</option>
+                            <option value="Korban Asusila">Korban Asusila</option>
+                            <option value="Anak Tidak Terdokumentasi">Anak Tidak Terdokumentasi</option>
+                            <option value="TPPO">TPPO</option>
+                        </select>
+                    </div>
+                </div>
+                <button onclick="window.print()" class="bg-rose-600 hover:bg-rose-700 text-white px-5 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2 shadow">
+                    <i class="fa-solid fa-print"></i> Cetak / Simpan PDF
+                </button>
+            </div>
+
+            <div class="flex-1 min-h-0 bg-slate-300 p-4 sm:p-8 rounded-xl overflow-y-auto flex justify-center items-start">
+                <div id="report-paper" class="bg-white text-black p-8 sm:p-12 w-[800px] min-h-[1050px] shadow-2xl font-serif text-sm relative flex flex-col justify-between overflow-visible my-auto">
+                    
+                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+                        <img src="image1.jpg" alt="Logo ATENSI Watermark" class="w-96 opacity-10 object-contain">
+                    </div>
+
+                    <div class="relative z-10">
+                        <div class="border-b-4 border-double border-black pb-4 mb-6 text-center flex items-center gap-4">
+                            <div class="w-24 flex items-center justify-center flex-shrink-0">
+                                <img src="LOGO KEMENSOS - 7.png" alt="Logo Kemensos" class="max-h-20 w-auto object-contain">
+                            </div>
+                            <div class="flex-1 pr-6">
+                                <h3 class="text-base font-bold uppercase tracking-wider">KEMENTERIAN SOSIAL REPUBLIK INDONESIA</h3>
+                                <h2 class="text-xl font-extrabold uppercase tracking-wide">SENTRA "HANDAYANI" JAKARTA</h2>
+                                <p class="text-xs font-sans text-slate-600 mt-1">Jl. PPA No.1 RT/RW 006/001, Bambu Apus, Kec. Cipayung, Kota Jakarta Timur, DKI Jakarta 13890</p>
+                            </div>
+                        </div>
+
+                        <div id="report-section-individu">
+                            <div class="text-center mb-6">
+                                <h2 class="text-lg font-bold underline uppercase tracking-wide">FORM PERKEMBANGAN TERKINI PENERIMA MANFAAT SENTRA HANDAYANI</h2>
+                                <p class="text-xs font-sans text-slate-500 mt-1">Tanggal Cetak: <span id="report-print-date" class="font-semibold text-black"></span></p>
+                            </div>
+
+                            <div class="mb-6 font-sans">
+                                <h4 class="font-bold border-b pb-1 mb-3 text-slate-800 uppercase text-xs tracking-wider">I. BIODATA PENERIMA MANFAAT</h4>
+                                <div class="flex gap-6">
+                                    <div class="w-28 h-36 border border-slate-300 bg-slate-100 rounded overflow-hidden flex-shrink-0 flex items-center justify-center">
+                                        <img id="report-pm-photo" src="" alt="Foto PM" class="w-full h-full object-cover hidden">
+                                        <i id="report-pm-photo-icon" class="fa-solid fa-user text-3xl text-slate-400"></i>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-y-2 text-xs flex-1">
+                                        <div><span class="text-slate-500">Nama Lengkap:</span> <br><strong id="report-pm-nama" class="text-sm"></strong></div>
+                                        <div><span class="text-slate-500">Nama Ibu Kandung:</span> <br><strong id="report-pm-ibu"></strong></div>
+                                        <div><span class="text-slate-500">Jenis Kelamin:</span> <br><strong id="report-pm-jk"></strong></div>
+                                        <div><span class="text-slate-500">Kategori Kasus:</span> <br><strong id="report-pm-kasus" class="text-rose-700"></strong></div>
+                                        <div><span class="text-slate-500">Status Legal:</span> <br><strong id="report-pm-status"></strong></div>
+                                        <div><span class="text-slate-500">Peksos Pendamping:</span> <br><strong id="report-pm-peksos"></strong></div>
+                                        <div><span class="text-slate-500">Tanggal Masuk:</span> <br><strong id="report-pm-masuk"></strong></div>
+                                        <div><span class="text-slate-500">Rencana Terminasi:</span> <br><strong id="report-pm-terminasi"></strong></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-8 font-sans">
+                                <h4 class="font-bold border-b pb-1 mb-3 text-slate-800 uppercase text-xs tracking-wider">II. CATATAN PERKEMBANGAN TERKINI</h4>
+                                <table class="w-full border-collapse border border-slate-300 text-xs bg-white/80">
+                                    <thead>
+                                        <tr class="bg-slate-100 text-slate-700">
+                                            <th class="border border-slate-300 p-2 w-36">Tanggal & Waktu</th>
+                                            <th class="border border-slate-300 p-2 w-28">Kategori</th>
+                                            <th class="border border-slate-300 p-2">Deskripsi Perkembangan</th>
+                                            <th class="border border-slate-300 p-2 w-32">Petugas</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="report-perkembangan-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div id="report-section-rekapitulasi" class="hidden font-sans">
+                            <div class="text-center mb-6">
+                                <h2 id="report-rekap-title" class="text-lg font-bold underline uppercase tracking-wide">LAPORAN REKAPITULASI DATABASE & REKAM PERKEMBANGAN PENERIMA MANFAAT</h2>
+                                <p id="report-rekap-subtitle" class="text-xs text-slate-600 font-medium mt-1"></p>
+                                <p class="text-xs text-slate-500 mt-0.5">Tanggal Cetak: <span id="report-rekap-print-date" class="font-semibold text-black"></span></p>
+                            </div>
+
+                            <table class="w-full border-collapse border border-slate-300 text-xs mb-6 bg-white/80">
+                                <thead>
+                                    <tr class="bg-slate-100 text-slate-700 uppercase">
+                                        <th class="border border-slate-300 p-2 text-center w-8">No</th>
+                                        <th class="border border-slate-300 p-2">Nama PM</th>
+                                        <th class="border border-slate-300 p-2">Kasus</th>
+                                        <th class="border border-slate-300 p-2">Status</th>
+                                        <th class="border border-slate-300 p-2">Peksos Pendamping</th>
+                                        <th class="border border-slate-300 p-2 text-center">Jml Catatan</th>
+                                        <th class="border border-slate-300 p-2">Update Terakhir</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="report-rekapitulasi-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="font-sans text-xs pt-8 relative z-10">
+                        <div class="grid grid-cols-2 gap-8 text-center">
+                            <div>
+                                <p class="mb-1 text-slate-600">Mengetahui,</p>
+                                <p class="font-bold mb-16">Ketua Kelompok Kerja (Pokja)</p>
+                                <p id="report-ttd-pokja-nama" class="font-bold underline text-sm">_____________________</p>
+                                <p class="text-slate-500">NIP. <span id="report-ttd-pokja-nip">-</span></p>
+                            </div>
+                            <div>
+                                <p class="mb-1 text-slate-600">Jakarta, <span id="report-ttd-date"></span></p>
+                                <p class="font-bold mb-16">Pekerja Sosial Pendamping</p>
+                                <p id="report-ttd-peksos-nama" class="font-bold underline text-sm">_____________________</p>
+                                <p class="text-slate-500">NIP. <span id="report-ttd-peksos-nip">-</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 5: HALAMAN ADMIN MASTER (APPROVAL GANTI PASSWORD) -->
+        <section id="tab-admin" class="tab-content hidden h-full flex flex-col space-y-4">
+            <div class="flex-none bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <h2 class="text-lg font-bold text-slate-800">Panel Kontrol Master Admin</h2>
+                <p class="text-xs text-slate-500">Persetujuan Permintaan Perubahan Password dari Akun Petugas</p>
+            </div>
+
+            <div class="flex-1 min-h-0 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
+                <div class="flex-1 overflow-auto">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead class="bg-slate-100 text-slate-600 uppercase text-xs sticky top-0 z-10">
+                            <tr>
+                                <th class="p-3 bg-slate-100">Waktu Permintaan</th>
+                                <th class="p-3 bg-slate-100">Username</th>
+                                <th class="p-3 bg-slate-100">Password Baru Dituju</th>
+                                <th class="p-3 bg-slate-100">Status</th>
+                                <th class="p-3 bg-slate-100 text-center">Aksi Persetujuan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pwd-requests-table-body" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL: PEMINDAHAN PERMINTAAN GANTI PASSWORD -->
+    <div id="modal-reset-pwd" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="font-bold text-lg text-slate-800">Ajukan Perubahan Password</h3>
+                <button onclick="closeResetPasswordModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <form onsubmit="submitPasswordResetRequest(event)" class="space-y-4 text-xs sm:text-sm">
+                <div>
+                    <label class="font-medium text-slate-700 block mb-1">Username Akun Anda *</label>
+                    <input type="text" id="reset-pwd-username" required class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="user1..user100">
+                </div>
+                <div>
+                    <label class="font-medium text-slate-700 block mb-1">Password Baru *</label>
+                    <input type="password" id="reset-pwd-new" required class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="••••••••">
+                </div>
+                <p class="text-[11px] text-amber-600 bg-amber-50 p-2.5 rounded-lg">
+                    <i class="fa-solid fa-circle-info mr-1"></i> Permintaan Anda akan dikirim ke Master Admin untuk disetujui sebelum password aktif.
+                </p>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeResetPasswordModal()" class="px-4 py-2 border rounded-lg text-slate-600 hover:bg-slate-50">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium">Kirim Permintaan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD/EDIT PENERIMA MANFAAT -->
+    <div id="modal-pm" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-6 space-y-4 my-8">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 id="modal-pm-title" class="font-bold text-lg text-slate-800">Tambah Data Penerima Manfaat</h3>
+                <button onclick="closePMModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <form id="form-pm" onsubmit="savePM(event)" class="space-y-4 text-xs sm:text-sm">
+                <input type="hidden" id="pm-id">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="font-medium text-slate-700 block mb-1">Nama Lengkap *</label>
+                        <input type="text" id="pm-nama" required class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="font-medium text-slate-700 block mb-1">Nama Ibu Kandung *</label>
+                        <input type="text" id="pm-ibu" required class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="font-medium text-slate-700 block mb-1">Jenis Kelamin *</label>
+                        <select id="pm-jk" required class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="Laki - Laki">Laki - Laki</option>
+                            <option value="Perempuan">Perempuan</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="font-medium text-slate-700 block mb-1">Kategori Kasus *</label>
+                        <select id="pm-kasus" required class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="Anak Berhadapan Dengan Hukum">Anak Berhadapan Dengan Hukum</option>
+                            <option value="Korban Ektrimisme">Korban Ektrimisme</option>
+                            <option value="SKB">SKB</option>
+                            <option value="Korban Penyalahgunaan Napza">Korban Penyalahgunaan Napza</option>
+                            <option value="ODHIV">ODHIV</option>
+                            <option value="Kelompok Rentan">Kelompok Rentan</option>
+                            <option value="Korban Kekerasan Seksual">Korban Kekerasan Seksual</option>
+                            <option value="Anak Tidak Terdokumentasi">Anak Tidak Terdokumentasi</option>
+                            <option value="Korban Bullying">Korban Bullying</option>
+                            <option value="True Crime Community">True Crime Community</option>
+                            <option value="TPPO">TPPO</option>
+                            <option value="Lanjut Usia">Lanjut Usia</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="font-medium text-slate-700 block mb-1">Status Legal *</label>
+                        <select id="pm-status" required class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="Titipan">Titipan</option>
+                            <option value="Putusan">Putusan</option>
+                            <option value="Rujukan">Rujukan</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="font-medium text-slate-700 block mb-1">Pekerja Sosial Pendamping *</label>
+                        <select id="pm-peksos" required class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"></select>
+                    </div>
+                    <div>
+                        <label class="font-medium text-slate-700 block mb-1">Tanggal Masuk *</label>
+                        <input type="date" id="pm-masuk" required class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="font-medium text-slate-700 block mb-1">Tanggal Rencana Terminasi</label>
+                        <input type="date" id="pm-terminasi" class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="font-medium text-slate-700 block mb-1">Upload Foto PM</label>
+                    <input type="file" id="pm-foto" accept="image/*" class="w-full border rounded-lg p-2 text-slate-500 text-xs">
+                </div>
+                <div class="flex justify-end gap-2 pt-4 border-t">
+                    <button type="button" onclick="closePMModal()" class="px-4 py-2 border rounded-lg text-slate-600 hover:bg-slate-50">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium">Simpan Data</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD/EDIT PEGAWAI (Wajib Foto Ditambahkan) -->
+    <div id="modal-pegawai" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 id="modal-pegawai-title" class="font-bold text-lg text-slate-800">Tambah Data Pegawai</h3>
+                <button onclick="closePegawaiModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <form id="form-pegawai" onsubmit="savePegawai(event)" class="space-y-4 text-xs sm:text-sm">
+                <input type="hidden" id="pegawai-id">
+                <div>
+                    <label class="font-medium text-slate-700 block mb-1">Nama Pegawai *</label>
+                    <input type="text" id="pegawai-nama" required class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div>
+                    <label class="font-medium text-slate-700 block mb-1">NIP (Nomor Induk Pegawai) *</label>
+                    <input type="text" id="pegawai-nip" required class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="font-medium text-slate-700 block mb-1">Jabatan *</label>
+                        <select id="pegawai-jabatan" required class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="Pekerja Sosial">Pekerja Sosial</option>
+                            <option value="Ketua Pokja">Ketua Pokja</option>
+                            <option value="Instruktur">Instruktur</option>
+                            <option value="Pendamping">Pendamping</option>
+                            <option value="Pengasuh">Pengasuh</option>
+                            <option value="Psikolog">Psikolog</option>
+                            <option value="Fisioterapi">Fisioterapi</option>
+                            <option value="Dokter">Dokter</option>
+                            <option value="Perawat">Perawat</option>
+                            <option value="Petugas Keamanan">Petugas Keamanan</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="font-medium text-slate-700 block mb-1">Kelompok Kerja (Pokja) *</label>
+                        <select id="pegawai-pokja" required class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="Pokja Disabilitas">Pokja Disabilitas</option>
+                            <option value="Pokja Lanjut Usia">Pokja Lanjut Usia</option>
+                            <option value="Pokja Napza">Pokja Napza</option>
+                            <option value="Pokja Anak">Pokja Anak</option>
+                            <option value="Pokja Residensial">Pokja Rehabilitasi</option>
+                            <option value="Pokja Humas">Pokja Humas</option>
+                            <option value="Pokja Umum">Pokja Umum</option>
+                            <option value="Pokja Data">Pokja Data</option>
+                            <option value="Pokja Tata Usaha">Pokja Tata Usaha</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="font-medium text-slate-700 block mb-1">Upload Foto Pegawai (Wajib) *</label>
+                    <input type="file" id="pegawai-foto" accept="image/*" required class="w-full border rounded-lg p-2 text-slate-500 text-xs bg-slate-50">
+                </div>
+                <div class="flex justify-end gap-2 pt-4 border-t">
+                    <button type="button" onclick="closePegawaiModal()" class="px-4 py-2 border rounded-lg text-slate-600 hover:bg-slate-50">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium">Simpan Pegawai</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD/EDIT PERKEMBANGAN -->
+    <div id="modal-perkembangan" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex justify-center items-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-xl max-w-xl w-full p-6 space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 id="modal-perkembangan-title" class="font-bold text-lg text-slate-800">Catat Rekam Perkembangan</h3>
+                <button onclick="closePerkembanganModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            <form id="form-perkembangan" onsubmit="savePerkembangan(event)" class="space-y-4 text-xs sm:text-sm">
+                <input type="hidden" id="perkembangan-id">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="font-medium text-slate-700 block mb-1">Penerima Manfaat *</label>
+                        <select id="perkembangan-pm" required class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"></select>
+                    </div>
+                    <div>
+                        <label class="font-medium text-slate-700 block mb-1">Tanggal & Jam Catatan *</label>
+                        <input type="datetime-local" id="perkembangan-tanggal" required class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="font-medium text-slate-700 block mb-1">Kategori Perkembangan *</label>
+                    <select id="perkembangan-kategori" required class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <option value="Perilaku & Disiplin">Perilaku & Disiplin</option>
+                        <option value="Kesehatan Mental & Psikologis">Kesehatan Mental & Psikologis</option>
+                        <option value="Kesehatan Fisik & Medis">Kesehatan Fisik & Medis</option>
+                        <option value="Keagamaan & Kerohanian">Keagamaan & Kerohanian</option>
+                        <option value="Keterampilan & Vokasional">Keterampilan & Vokasional</option>
+                        <option value="Interaksi Sosial">Interaksi Sosial</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="font-medium text-slate-700 block mb-1">Deskripsi Perkembangan *</label>
+                    <textarea id="perkembangan-deskripsi" rows="3" required placeholder="Jelaskan detail perkembangan, sikap, atau kejadian..." class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"></textarea>
+                </div>
+                <div>
+                    <label class="font-medium text-slate-700 block mb-1">Rekomendasi / Tindak Lanjut</label>
+                    <textarea id="perkembangan-rekomendasi" rows="2" placeholder="Langkah penanganan atau tindak lanjut Peksos..." class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"></textarea>
+                </div>
+                <div>
+                    <label class="font-medium text-slate-700 block mb-1">Upload Foto Dokumentasi Perkembangan</label>
+                    <input type="file" id="perkembangan-foto" accept="image/*" class="w-full border rounded-lg p-2 text-slate-500 text-xs">
+                </div>
+                <div>
+                    <label class="font-medium text-slate-700 block mb-1">Petugas Pencatat *</label>
+                    <select id="perkembangan-petugas" required class="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"></select>
+                </div>
+                <div class="flex justify-end gap-2 pt-4 border-t">
+                    <button type="button" onclick="closePerkembanganModal()" class="px-4 py-2 border rounded-lg text-slate-600 hover:bg-slate-50">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium">Simpan Catatan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script src="app.js"></script>
+</body>
+</html>
