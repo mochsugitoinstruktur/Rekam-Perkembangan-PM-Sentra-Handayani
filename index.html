@@ -241,12 +241,38 @@
             <h2 class="text-lg font-bold text-slate-800">Data Pegawai & Petugas</h2>
             <p class="text-xs text-slate-500">Daftar Pekerja Sosial (Peksos), Pembina, dan Kepala Pokja</p>
         </div>
-        <!-- Tombol Tambah Pegawai diberi ID untuk kontrol hak akses -->
         <button id="btn-tambah-pegawai" onclick="openPegawaiModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium items-center gap-2 shadow hidden">
             <i class="fa-solid fa-user-shield"></i> Tambah Pegawai
         </button>
     </div>
-    <!-- ... sisa kode tabel pegawai ... -->
+
+    <!-- KARTU STATISTIK RINGKASAN PEGAWAI -->
+    <div class="flex-none grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+            <div>
+                <p class="text-xs text-slate-500 font-medium uppercase tracking-wide">Total Pegawai</p>
+                <h3 id="stat-total-pegawai" class="text-2xl font-bold text-indigo-600 mt-1">0</h3>
+            </div>
+            <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl"><i class="fa-solid fa-users text-xl"></i></div>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+            <p class="text-xs text-slate-500 font-medium uppercase tracking-wide mb-1">Berdasarkan Jabatan</p>
+            <div id="stat-jabatan-list" class="text-xs space-y-1 max-h-20 overflow-y-auto text-slate-700 pr-1"></div>
+        </div>
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+            <p class="text-xs text-slate-500 font-medium uppercase tracking-wide mb-1">Berdasarkan Pokja</p>
+            <div id="stat-pokja-list" class="text-xs space-y-1 max-h-20 overflow-y-auto text-slate-700 pr-1"></div>
+        </div>
+    </div>
+
+    <div class="flex-1 min-h-0 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
+        <div class="flex-1 overflow-auto">
+            <!-- Tabel Pegawai -->
+            <table class="w-full text-left border-collapse text-sm">
+                ...
+            </table>
+        </div>
+    </div>
 </section>
 
         <!-- TAB 3: REKAM PERKEMBANGAN -->
