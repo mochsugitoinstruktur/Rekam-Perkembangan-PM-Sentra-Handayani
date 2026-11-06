@@ -426,7 +426,11 @@ function renderPegawaiTable() {
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    // --- HITUNG DAN OPERASIKAN STATISTIK PEGAWAI ---
+    // Ambil nilai dari input pencarian
+    const searchInput = document.getElementById('search-pegawai');
+    const search = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+    // --- HITUNG STATISTIK KESELURUHAN PEGAWAI ---
     const totalPegawai = dataPegawai.length;
     const jabatanCounts = {};
     const pokjaCounts = {};
@@ -438,11 +442,9 @@ function renderPegawaiTable() {
         pokjaCounts[pokja] = (pokjaCounts[pokja] || 0) + 1;
     });
 
-    // Update Total Pegawai
     const totalEl = document.getElementById('stat-total-pegawai');
     if (totalEl) totalEl.innerText = totalPegawai;
 
-    // Update Ringkasan Jabatan
     const jabatanListEl = document.getElementById('stat-jabatan-list');
     if (jabatanListEl) {
         jabatanListEl.innerHTML = Object.keys(jabatanCounts).length > 0 
@@ -455,7 +457,6 @@ function renderPegawaiTable() {
             : '<span class="text-slate-400 italic">Belum ada data</span>';
     }
 
-    // Update Ringkasan Pokja
     const pokjaListEl = document.getElementById('stat-pokja-list');
     if (pokjaListEl) {
         pokjaListEl.innerHTML = Object.keys(pokjaCounts).length > 0 
@@ -467,14 +468,29 @@ function renderPegawaiTable() {
             `).join('')
             : '<span class="text-slate-400 italic">Belum ada data</span>';
     }
+    // --- AKHIR STATISTIK ---
 
-    // --- RENDER SELURUH BARIS PEGAWAI KEMBALI SEPERTI SEMULA ---
-    if (dataPegawai.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400 italic">Belum ada data pegawai.</td></tr>`;
+    // --- FILTER DATA BERDASARKAN PENCARIAN (NAMA / NIP / JABATAN / POKJA) ---
+    const filteredPegawai = dataPegawai.filter(peg => {
+        const nama = peg.nama ? peg.nama.toLowerCase() : '';
+        const nip = peg.nip ? peg.nip.toLowerCase() : '';
+        const jabatan = peg.jabatan ? peg.jabatan.toLowerCase() : '';
+        const pokja = peg.pokja ? peg.pokja.toLowerCase() : '';
+
+        return nama.includes(search) || nip.includes(search) || jabatan.includes(search) || pokja.includes(search);
+    });
+
+    // Update counter hasil pencarian
+    const countFilteredEl = document.getElementById('total-filtered-pegawai');
+    if (countFilteredEl) countFilteredEl.innerText = filteredPegawai.length;
+
+    if (filteredPegawai.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400 italic">Data pegawai tidak ditemukan.</td></tr>`;
+        updateDropdownOptions();
         return;
     }
 
-    dataPegawai.forEach(peg => {
+    filteredPegawai.forEach(peg => {
         const isEditable = canUserModify(peg.createdByAccount);
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
