@@ -169,6 +169,8 @@ function rejectAccountRequest(reqId) {
 
 function loadSession() {
     const saved = localStorage.getItem('sh_logged_user');
+    const btnTambahPegawai = document.getElementById('btn-tambah-pegawai');
+
     if (saved) {
         currentUser = JSON.parse(saved);
         if (usersDB[currentUser.username]) {
@@ -180,11 +182,14 @@ function loadSession() {
         
         if (currentUser.role === 'admin') {
             document.getElementById('tab-admin-btn').classList.remove('hidden');
+            if (btnTambahPegawai) btnTambahPegawai.classList.remove('hidden'); // Admin bisa tambah pegawai
         } else {
             document.getElementById('tab-admin-btn').classList.add('hidden');
+            if (btnTambahPegawai) btnTambahPegawai.classList.add('hidden'); // User biasa tombol disembunyikan
         }
     } else {
         document.getElementById('welcome-screen').classList.remove('hidden');
+        if (btnTambahPegawai) btnTambahPegawai.classList.add('hidden');
     }
 }
 
@@ -480,11 +485,14 @@ function updateDropdownOptions() {
     const peksosList = dataPegawai.filter(p => p.jabatan === 'Pekerja Sosial' || p.jabatan === 'Ketua Pokja');
     peksosSelect.innerHTML = peksosList.map(p => `<option value="${p.nama}">${p.nama}</option>`).join('');
 
+    // --- PENGATURAN PILIHAN PETUGAS PENCATAT BERDASARKAN ROLE ---
     if (currentUser) {
         if (currentUser.role === 'admin') {
+            // Admin dapat memilih seluruh daftar pegawai yang ada
             perkPetugasSelect.innerHTML = dataPegawai.map(p => `<option value="${p.nama}">${p.nama} (${p.jabatan})</option>`).join('');
-            perkPetugasSelect.removeAttribute("disabled");
+            perkPetugasSelect.removeAttribute("disabled"); // Memastikan select tidak terkunci untuk admin
         } else {
+            // User biasa dikunci hanya pada data pegawai miliknya sendiri
             const myPegawai = dataPegawai.find(p => p.id === currentUser.pegawaiId || p.createdByAccount === currentUser.username);
             
             if (myPegawai) {
