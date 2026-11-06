@@ -169,7 +169,7 @@
             <button id="tab-pm-btn" onclick="switchTab('pm')" class="tab-btn px-4 py-3 text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600 flex items-center gap-2 whitespace-nowrap">
                 <i class="fa-solid fa-users"></i> Data Penerima Manfaat
             </button>
-            <button id="tab-pegawai-btn" onclick="switchTab('pegawai')" class="tab-btn px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-indigo-600 flex items-center gap-2 whitespace-nowrap">
+            <button id="-btn" onclick="switchTab('pegawai')" class="tab-btn px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-indigo-600 flex items-center gap-2 whitespace-nowrap">
                 <i class="fa-solid fa-id-card"></i> Data Pegawai / Petugas
             </button>
             <button id="tab-perkembangan-btn" onclick="switchTab('perkembangan')" class="tab-btn px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-indigo-600 flex items-center gap-2 whitespace-nowrap">
@@ -264,7 +264,32 @@
             <div id="stat-pokja-list" class="text-xs space-y-1 max-h-20 overflow-y-auto text-slate-700 pr-1"></div>
         </div>
     </div>
+    
+<!-- KOTAK PENCARIAN PEGAWAI -->
+    <div class="flex-none bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+        <input type="text" id="search-pegawai" oninput="renderPegawaiTable()" placeholder="Cari berdasarkan Nama, NIP, Jabatan, atau Pokja..." class="w-full sm:w-80 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        <div class="text-xs text-slate-500 font-medium ml-4">Ditemukan: <span id="total-filtered-pegawai" class="font-bold text-indigo-600">0</span> pegawai</div>
+    </div>
 
+    <div class="flex-1 min-h-0 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
+        <div class="flex-1 overflow-auto">
+            <table class="w-full text-left border-collapse text-sm">
+                <thead class="bg-slate-100 text-slate-600 uppercase text-xs sticky top-0 z-10">
+                    <tr>
+                        <th class="p-3 bg-slate-100">Foto</th>
+                        <th class="p-3 bg-slate-100">Nama Pegawai</th>
+                        <th class="p-3 bg-slate-100">NIP</th>
+                        <th class="p-3 bg-slate-100">Jabatan</th>
+                        <th class="p-3 bg-slate-100">Kelompok Kerja (Pokja)</th>
+                        <th class="p-3 bg-slate-100">Akun Linked</th>
+                        <th class="p-3 bg-slate-100 text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="pegawai-table-body" class="divide-y divide-slate-100"></tbody>
+            </table>
+        </div>
+    </div>
+    
     <!-- TABEL PEGAWAI (URUTAN DILANJUTKAN DARI STATISTIK) -->
     <div class="flex-1 min-h-0 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
         <div class="flex-1 overflow-auto">
