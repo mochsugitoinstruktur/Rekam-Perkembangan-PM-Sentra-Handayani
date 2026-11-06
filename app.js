@@ -167,9 +167,28 @@ function rejectAccountRequest(reqId) {
     }
 }
 
+// MEMATIKAN / MENGATUR TAMPILAN SESUAI HAK AKSES PERAN AKUN
+function updateAdminUI() {
+    const btnTambahPegawai = document.getElementById('btn-tambah-pegawai');
+    const tabAdminBtn = document.getElementById('tab-admin-btn');
+
+    if (currentUser && currentUser.role === 'admin') {
+        if (btnTambahPegawai) {
+            btnTambahPegawai.classList.remove('hidden');
+            btnTambahPegawai.classList.add('flex');
+        }
+        if (tabAdminBtn) tabAdminBtn.classList.remove('hidden');
+    } else {
+        if (btnTambahPegawai) {
+            btnTambahPegawai.classList.add('hidden');
+            btnTambahPegawai.classList.remove('flex');
+        }
+        if (tabAdminBtn) tabAdminBtn.classList.add('hidden');
+    }
+}
+
 function loadSession() {
     const saved = localStorage.getItem('sh_logged_user');
-    const btnTambahPegawai = document.getElementById('btn-tambah-pegawai');
 
     if (saved) {
         currentUser = JSON.parse(saved);
@@ -180,16 +199,10 @@ function loadSession() {
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('logged-user-label').innerText = `${currentUser.username} (${currentUser.role})`;
         
-        if (currentUser.role === 'admin') {
-            document.getElementById('tab-admin-btn').classList.remove('hidden');
-            if (btnTambahPegawai) btnTambahPegawai.classList.remove('hidden'); // Admin bisa tambah pegawai
-        } else {
-            document.getElementById('tab-admin-btn').classList.add('hidden');
-            if (btnTambahPegawai) btnTambahPegawai.classList.add('hidden'); // User biasa tombol disembunyikan
-        }
+        updateAdminUI();
     } else {
         document.getElementById('welcome-screen').classList.remove('hidden');
-        if (btnTambahPegawai) btnTambahPegawai.classList.add('hidden');
+        updateAdminUI();
     }
 }
 
@@ -215,9 +228,9 @@ function handleLogin(e) {
         } else {
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('logged-user-label').innerText = `${currentUser.username} (${currentUser.role})`;
-            if (currentUser.role === 'admin') {
-                document.getElementById('tab-admin-btn').classList.remove('hidden');
-            }
+            
+            updateAdminUI();
+            
             showToast(`Selamat datang, ${currentUser.username}!`);
             renderPMTable();
             renderPegawaiTable();
@@ -410,10 +423,10 @@ function renderPMTable() {
 
 function renderPegawaiTable() {
     const tbody = document.getElementById('pegawai-table-body');
-    if(!tbody) return;
+    if (!tbody) return;
     tbody.innerHTML = '';
 
-    // --- HITUNG STATISTIK PEGAWAI ---
+    // --- HITUNG DAN OPERASIKAN STATISTIK PEGAWAI ---
     const totalPegawai = dataPegawai.length;
     const jabatanCounts = {};
     const pokjaCounts = {};
@@ -425,11 +438,11 @@ function renderPegawaiTable() {
         pokjaCounts[pokja] = (pokjaCounts[pokja] || 0) + 1;
     });
 
-    // Render Total Pegawai
+    // Update Total Pegawai
     const totalEl = document.getElementById('stat-total-pegawai');
     if (totalEl) totalEl.innerText = totalPegawai;
 
-    // Render Rincian Jabatan
+    // Update Ringkasan Jabatan
     const jabatanListEl = document.getElementById('stat-jabatan-list');
     if (jabatanListEl) {
         jabatanListEl.innerHTML = Object.keys(jabatanCounts).length > 0 
@@ -439,10 +452,10 @@ function renderPegawaiTable() {
                     <span class="font-bold bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded text-[11px]">${count}</span>
                 </div>
             `).join('')
-            : '<span class="text-slate-400 italic">Belum ada data jabatan</span>';
+            : '<span class="text-slate-400 italic">Belum ada data</span>';
     }
 
-    // Render Rincian Pokja
+    // Update Ringkasan Pokja
     const pokjaListEl = document.getElementById('stat-pokja-list');
     if (pokjaListEl) {
         pokjaListEl.innerHTML = Object.keys(pokjaCounts).length > 0 
@@ -452,9 +465,14 @@ function renderPegawaiTable() {
                     <span class="font-bold bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded text-[11px]">${count}</span>
                 </div>
             `).join('')
-            : '<span class="text-slate-400 italic">Belum ada data pokja</span>';
+            : '<span class="text-slate-400 italic">Belum ada data</span>';
     }
-    // --- AKHIR STATISTIK ---
+
+    // --- RENDER SELURUH BARIS PEGAWAI KEMBALI SEPERTI SEMULA ---
+    if (dataPegawai.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400 italic">Belum ada data pegawai.</td></tr>`;
+        return;
+    }
 
     dataPegawai.forEach(peg => {
         const isEditable = canUserModify(peg.createdByAccount);
@@ -480,6 +498,7 @@ function renderPegawaiTable() {
         `;
         tbody.appendChild(tr);
     });
+    
     updateDropdownOptions();
 }
 
