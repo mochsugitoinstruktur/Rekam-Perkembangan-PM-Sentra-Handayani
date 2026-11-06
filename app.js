@@ -413,6 +413,49 @@ function renderPegawaiTable() {
     if(!tbody) return;
     tbody.innerHTML = '';
 
+    // --- HITUNG STATISTIK PEGAWAI ---
+    const totalPegawai = dataPegawai.length;
+    const jabatanCounts = {};
+    const pokjaCounts = {};
+
+    dataPegawai.forEach(peg => {
+        const jabatan = peg.jabatan || 'Lainnya';
+        const pokja = peg.pokja || 'Umum';
+        jabatanCounts[jabatan] = (jabatanCounts[jabatan] || 0) + 1;
+        pokjaCounts[pokja] = (pokjaCounts[pokja] || 0) + 1;
+    });
+
+    // Render Total Pegawai
+    const totalEl = document.getElementById('stat-total-pegawai');
+    if (totalEl) totalEl.innerText = totalPegawai;
+
+    // Render Rincian Jabatan
+    const jabatanListEl = document.getElementById('stat-jabatan-list');
+    if (jabatanListEl) {
+        jabatanListEl.innerHTML = Object.keys(jabatanCounts).length > 0 
+            ? Object.entries(jabatanCounts).map(([jabatan, count]) => `
+                <div class="flex justify-between items-center py-0.5 border-b border-slate-100 last:border-0">
+                    <span class="text-slate-600 truncate mr-2">${jabatan}</span> 
+                    <span class="font-bold bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded text-[11px]">${count}</span>
+                </div>
+            `).join('')
+            : '<span class="text-slate-400 italic">Belum ada data jabatan</span>';
+    }
+
+    // Render Rincian Pokja
+    const pokjaListEl = document.getElementById('stat-pokja-list');
+    if (pokjaListEl) {
+        pokjaListEl.innerHTML = Object.keys(pokjaCounts).length > 0 
+            ? Object.entries(pokjaCounts).map(([pokja, count]) => `
+                <div class="flex justify-between items-center py-0.5 border-b border-slate-100 last:border-0">
+                    <span class="text-slate-600 truncate mr-2">${pokja}</span> 
+                    <span class="font-bold bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded text-[11px]">${count}</span>
+                </div>
+            `).join('')
+            : '<span class="text-slate-400 italic">Belum ada data pokja</span>';
+    }
+    // --- AKHIR STATISTIK ---
+
     dataPegawai.forEach(peg => {
         const isEditable = canUserModify(peg.createdByAccount);
         const tr = document.createElement('tr');
