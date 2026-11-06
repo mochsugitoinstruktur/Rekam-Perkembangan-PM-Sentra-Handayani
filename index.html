@@ -233,20 +233,20 @@
             </div>
         </section>
 
-        <!-- TAB 2: PEGAWAI / PETUGAS -->
-        <!-- TAB 2: PEGAWAI / PETUGAS -->
+<!-- TAB 2: PEGAWAI / PETUGAS -->
 <section id="tab-pegawai" class="tab-content hidden h-full flex flex-col space-y-4">
     <div class="flex-none flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl shadow-sm border border-slate-200">
         <div>
             <h2 class="text-lg font-bold text-slate-800">Data Pegawai & Petugas</h2>
             <p class="text-xs text-slate-500">Daftar Pekerja Sosial (Peksos), Pembina, dan Kepala Pokja</p>
         </div>
-        <button id="btn-tambah-pegawai" onclick="openPegawaiModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium items-center gap-2 shadow hidden">
+        <!-- Tombol Tambah Pegawai khusus untuk Admin -->
+        <button id="btn-tambah-pegawai" onclick="openPegawaiModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 shadow hidden">
             <i class="fa-solid fa-user-shield"></i> Tambah Pegawai
         </button>
     </div>
 
-    <!-- KARTU STATISTIK RINGKASAN PEGAWAI -->
+    <!-- KARTU STATISTIK PEGAWAI -->
     <div class="flex-none grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
             <div>
@@ -265,11 +265,22 @@
         </div>
     </div>
 
+    <!-- TABEL PEGAWAI (URUTAN DILANJUTKAN DARI STATISTIK) -->
     <div class="flex-1 min-h-0 bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col overflow-hidden">
         <div class="flex-1 overflow-auto">
-            <!-- Tabel Pegawai -->
             <table class="w-full text-left border-collapse text-sm">
-                ...
+                <thead class="bg-slate-100 text-slate-600 uppercase text-xs sticky top-0 z-10">
+                    <tr>
+                        <th class="p-3 bg-slate-100">Foto</th>
+                        <th class="p-3 bg-slate-100">Nama Pegawai</th>
+                        <th class="p-3 bg-slate-100">NIP</th>
+                        <th class="p-3 bg-slate-100">Jabatan</th>
+                        <th class="p-3 bg-slate-100">Kelompok Kerja (Pokja)</th>
+                        <th class="p-3 bg-slate-100">Akun Linked</th>
+                        <th class="p-3 bg-slate-100 text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="pegawai-table-body" class="divide-y divide-slate-100"></tbody>
             </table>
         </div>
     </div>
