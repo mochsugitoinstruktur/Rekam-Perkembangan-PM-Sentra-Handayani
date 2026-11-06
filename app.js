@@ -566,9 +566,17 @@ function updateDropdownOptions() {
     // --- PENGATURAN PILIHAN PETUGAS PENCATAT BERDASARKAN ROLE ---
     if (currentUser) {
         if (currentUser.role === 'admin') {
+            // Simpan nilai yang sedang dipilih saat ini (jika ada) agar tidak ter-reset otomatis
+            const currentSelectedPetugas = perkPetugasSelect.value;
+
             // Admin dapat memilih seluruh daftar pegawai yang ada
             perkPetugasSelect.innerHTML = dataPegawai.map(p => `<option value="${p.nama}">${p.nama} (${p.jabatan})</option>`).join('');
             perkPetugasSelect.removeAttribute("disabled"); // Memastikan select tidak terkunci untuk admin
+
+            // Kembalikan pilihan ke nilai sebelumnya jika masih tersedia di dalam list
+            if (currentSelectedPetugas && Array.from(perkPetugasSelect.options).some(opt => opt.value === currentSelectedPetugas)) {
+                perkPetugasSelect.value = currentSelectedPetugas;
+            }
         } else {
             // User biasa dikunci hanya pada data pegawai miliknya sendiri
             const myPegawai = dataPegawai.find(p => p.id === currentUser.pegawaiId || p.createdByAccount === currentUser.username);
